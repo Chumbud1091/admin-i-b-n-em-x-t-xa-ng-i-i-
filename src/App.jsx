@@ -10,30 +10,25 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 function App() {
-  const { isLoggedIn, refreshSession } = useAuth();
-  useEffect(() => {
+  const { currentUser, isLoggedIn, refreshSession } = useAuth();
+    useEffect(() => {
     refreshSession();
   }, [refreshSession]);
 
+  const isAdmin = !!currentUser && currentUser.role === "admin";
+
   if (!isLoggedIn) {
+    return <Login />;
+  }
+
+  if (!isAdmin) {
     return (
-      <>
-        <Login />
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          closeOnClick
-          pauseOnHover
-          draggable
-          pauseOnFocusLoss
-          theme="dark"
-        />
-      </>
+      <div className="min-h-screen flex items-center justify-center text-white">
+        Access denied. Admin only.
+      </div>
     );
   }
 
-  // ĐÃ LOGIN → vào dashboard admin bình thường
   return (
     <>
       <AdminNavBar />
