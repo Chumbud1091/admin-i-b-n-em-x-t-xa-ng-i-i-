@@ -1,7 +1,7 @@
 import React, { useCallback, useRef, useState } from "react";
 import { AddCarPageStyles, toastStyles } from "../../assets/dummyStyles";
 import { toast } from "react-toastify";
-import client from "../../../services/client";
+import client from "../../services/client";
 
 const AddCar = () => {
   const initialFormData = {
