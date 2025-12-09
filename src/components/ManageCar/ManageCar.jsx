@@ -402,6 +402,7 @@ const ManageCar = () => {
         cars: apiCars,
       } = res.data || {};
 
+      console.log("Fetched admin cars:", res.cars);
       const safeCars = (apiCars || []).map((c, i) => buildSafeCar(c, i));
 
       setCars(safeCars);
