@@ -18,7 +18,7 @@ import {
 } from "react-icons/fa";
 import { styles } from "../../assets/dummyStyles";
 import { toast } from "react-toastify";
-import client from "../../../services/client";
+import client from "../../services/client";
 
 const ADMIN_LIMIT = 12;
 
