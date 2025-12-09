@@ -1,3 +1,4 @@
+import React, { useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 import AddCar from "./components/AddCar/AddCar";
 import ManageCar from "./components/ManageCar/ManageCar";
@@ -9,7 +10,11 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 function App() {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, refreshSession } = useAuth();
+  useEffect(() => {
+    refreshSession();
+  }, [refreshSession]);
+
   if (!isLoggedIn) {
     return (
       <>
