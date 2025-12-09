@@ -133,7 +133,7 @@ const AddCar = () => {
         });
       }
 
-      await client.post("/cars", formData, {
+      await client.post("/admin/cars", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
