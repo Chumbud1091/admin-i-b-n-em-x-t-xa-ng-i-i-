@@ -1,14 +1,34 @@
-import React, { useEffect, useCallback, useMemo } from 'react';
-import { FaCar, FaCog, FaEdit, FaFilter, FaGasPump, FaTachometerAlt, FaTrash, FaUser, FaTimes } from 'react-icons/fa';
-import { styles } from '../../assets/dummyStyles';
-import { toast } from 'react-toastify';
-import client from '../../../services/client';
+import React, {
+  useEffect,
+  useCallback,
+  useMemo,
+  useState,
+  useRef,
+} from "react";
+import {
+  FaCar,
+  FaCog,
+  FaEdit,
+  FaFilter,
+  FaGasPump,
+  FaTachometerAlt,
+  FaTrash,
+  FaUser,
+  FaTimes,
+} from "react-icons/fa";
+import { styles } from "../../assets/dummyStyles";
+import { toast } from "react-toastify";
+import client from "../../../services/client";
+
+const ADMIN_LIMIT = 12;
 
 const buildSafeCar = (raw = {}, idx = 0) => {
   const _id = raw._id || raw.id || null;
   const images = Array.isArray(raw.images)
     ? raw.images
-    : (raw.image ? [raw.image] : []);
+    : raw.image
+    ? [raw.image]
+    : [];
 
   return {
     _id,
@@ -51,20 +71,10 @@ const StatCard = ({ title, value, icon: Icon, className = "" }) => (
 );
 
 const CarCard = ({ car, onEdit, onDelete }) => {
-  const getStatusStyle = (status) => {
-    const styles = {
-      available: "bg-green-900/30 text-green-400",
-      rented: "bg-yellow-900/30 text-yellow-400",
-      maintenance: "bg-red-900/30 text-red-400",
-    };
-    return styles[status] || "bg-gray-700 text-gray-200";
-  };
-
-
   return (
     <div
       className={`${styles.gradientGray} ${styles.rounded2xl} ${styles.carCard} 
-    ${styles.borderGray} ${styles.borderHoverOrange}`}
+      ${styles.borderGray} ${styles.borderHoverOrange}`}
     >
       <div className="relative">
         <img
@@ -84,7 +94,7 @@ const CarCard = ({ car, onEdit, onDelete }) => {
           </div>
 
           <div className="text-2xl font-bold text-orange-500">
-            ${car.price?.toLocaleString()}
+            ${Number(car.price || 0).toLocaleString()}
           </div>
         </div>
 
@@ -144,18 +154,20 @@ const EditModal = ({ car, onClose, onSubmit, onChange }) => {
     transmission: c.transmission,
     fuelType: c.fuelType,
     engine: c.engine,
-    horsepower: Number(c.horsepower),
+    horsepower: c.horsepower === "" ? "" : Number(c.horsepower),
     description: c.description,
-    images: Array.isArray(c.images) && c.images.length
-      ? c.images
-      : (c.image ? [c.image] : []),
+    images:
+      Array.isArray(c.images) && c.images.length
+        ? c.images
+        : c.image
+        ? [c.image]
+        : [],
   });
-
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!car?.make || !car?.model)
-      return toast.error("Make and Model required.");
+      return toast.error("Make and Model are required.");
     onSubmit(mapToBackend(car));
   };
 
@@ -174,7 +186,9 @@ const EditModal = ({ car, onClose, onSubmit, onChange }) => {
 
   const inputField = (label, name, type = "text", options = {}) => (
     <div>
-      <label className={`block ${styles.textGray} text-sm mb-1`}>{label}</label>
+      <label className={`block ${styles.textGray} text-sm mb-1`}>
+        {label}
+      </label>
       {type === "select" ? (
         <select
           name={name}
@@ -189,11 +203,18 @@ const EditModal = ({ car, onClose, onSubmit, onChange }) => {
             </option>
           ))}
         </select>
+      ) : type === "textarea" ? (
+        <textarea
+          name={name}
+          value={car[name] || ""}
+          onChange={handleInputChange}
+          className={`${styles.inputField} min-h-[80px]`}
+        />
       ) : (
         <input
           type={type}
           name={name}
-          value={car[name] || ""}
+          value={car[name] ?? ""}
           onChange={handleInputChange}
           className={styles.inputField}
           required={options.required}
@@ -229,6 +250,11 @@ const EditModal = ({ car, onClose, onSubmit, onChange }) => {
                 min: 1900,
                 max: 2099,
               })}
+              {inputField("Price", "price", "number", {
+                required: true,
+                min: 0,
+              })}
+              {inputField("Color", "color", "text")}
               {inputField("Category", "category", "select", {
                 required: true,
                 items: [
@@ -248,13 +274,19 @@ const EditModal = ({ car, onClose, onSubmit, onChange }) => {
                 required: true,
                 items: ["Gasoline", "Diesel", "Hybrid", "Electric"],
               })}
+              {inputField("Number of Seats", "seats", "number", {
+                required: true,
+                min: 1,
+                max: 12,
+              })}
+              {inputField("Engine", "engine", "text")}
+              {inputField("Horsepower", "horsepower", "number", {
+                min: 0,
+              })}
             </div>
 
-            {inputField("Number of Seats", "seats", "number", {
-              required: true,
-              min: 1,
-              max: 12,
-            })}
+            {inputField("Description", "description", "textarea")}
+
             {car.images?.[0] && (
               <div className="flex justify-center">
                 <img
@@ -281,19 +313,13 @@ const EditModal = ({ car, onClose, onSubmit, onChange }) => {
         </div>
       </div>
     </div>
-  );  //map input fields to edit and sned updated car data to back end
-}
+  );
+};
 
 const NoCarsView = ({ onResetFilter }) => (
   <div className={`${styles.gradientGray} ${styles.noCarsContainer}`}>
-    <div
-      className="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-orange-900/30 
-      to-amber-900/30 flex items-center justify-center mb-6"
-    >
-      <div
-        className="bg-gradient-to-br from-orange-700 to-amber-700 w-16 h-16 
-        flex rounded-full justify-center items-center"
-      >
+    <div className="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-orange-900/30 to-amber-900/30 flex items-center justify-center mb-6">
+      <div className="bg-gradient-to-br from-orange-700 to-amber-700 w-16 h-16 flex rounded-full justify-center items-center">
         <FaCar className="h-8 w-8 text-orange-300" />
       </div>
     </div>
@@ -301,10 +327,7 @@ const NoCarsView = ({ onResetFilter }) => (
     <h3 className="mt-4 text-xl font-medium text-white">No cars found</h3>
     <p className="mt-2 text-gray-400">Try adjusting your filter criteria</p>
 
-    <button
-      onClick={onResetFilter}
-      className={`${styles.buttonPrimary} mt-4`}
-    >
+    <button onClick={onResetFilter} className={`${styles.buttonPrimary} mt-4`}>
       Show All Cars
     </button>
   </div>
@@ -321,7 +344,7 @@ const FilterSelect = ({ value, onChange, categories }) => (
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`${styles.inputField} focus:outline-none focus:ring-2 focus:ring-orange-500`}
+        className={`${styles.inputField} pl-8 focus:outline-none focus:ring-2 focus:ring-orange-500`}
       >
         {categories.map((c) => (
           <option key={c} value={c}>
@@ -329,7 +352,7 @@ const FilterSelect = ({ value, onChange, categories }) => (
           </option>
         ))}
       </select>
-      <div className="absolute left-1 top-4 text-orange-500">
+      <div className="absolute left-2 top-3.5 text-orange-500 pointer-events-none">
         <FaFilter />
       </div>
     </div>
@@ -337,27 +360,73 @@ const FilterSelect = ({ value, onChange, categories }) => (
 );
 
 const ManageCar = () => {
+  const [cars, setCars] = useState([]);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [editingCar, setEditingCar] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
-  const [cars, setCars] = React.useState([]);
-  const [categoryFilter, setCategoryFilter] = React.useState("all");
-  const [editingCar, setEditingCar] = React.useState(null);
-  const [showEditModal, setShowEditModal] = React.useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const abortRef = useRef(null);
 
   const fetchCars = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
     try {
-      const response = await client.get('/admin/cars?limit=100');
-      const raw = Array.isArray(response.data) ? response.data : response.data.data || [];
-      setCars(raw.map((c, i) => buildSafeCar(c, i)));
+      abortRef.current?.abort();
+    } catch {}
+
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+
+    try {
+      const res = await client.get("/admin/cars", {
+        params: {
+          page,
+          limit: ADMIN_LIMIT,
+          category: categoryFilter === "all" ? undefined : categoryFilter,
+        },
+        signal: ctrl.signal,
+      });
+
+      const {
+        page: apiPage,
+        pages: apiPages,
+        total: apiTotal,
+        cars: apiCars,
+      } = res.data || {};
+
+      const safeCars = (apiCars || []).map((c, i) => buildSafeCar(c, i));
+
+      setCars(safeCars);
+      setPage(apiPage || 1);
+      setPages(apiPages || 1);
+      setTotal(apiTotal || (apiCars ? apiCars.length : 0));
+    } catch (err) {
+      console.error("Error fetching admin cars:", err);
+      const msg =
+        err?.response?.data?.message || err.message || "Failed to fetch cars";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
     }
-    catch (error) {
-      console.error("Error fetching cars:", error);
-      toast.error("Failed to fetch cars. Please try again later.");
-    }
-  }, []);
+  }, [page, categoryFilter]);
 
   useEffect(() => {
     fetchCars();
+
+    return () => {
+      try {
+        abortRef.current?.abort();
+      } catch {}
+    };
   }, [fetchCars]);
 
   const categories = useMemo(
@@ -396,17 +465,19 @@ const ManageCar = () => {
     }
   };
 
-
   const openEdit = (car) => {
     setEditingCar({
       ...car,
-      images: Array.isArray(car.images) ? car.images : (car.image ? [car.image] : []),
+      images: Array.isArray(car.images)
+        ? car.images
+        : car.image
+        ? [car.image]
+        : [],
       image: car.image || (Array.isArray(car.images) ? car.images[0] : ""),
       _id: car._id ?? null,
     });
     setShowEditModal(true);
   };
-
 
   const handleEditSubmit = async (payload) => {
     try {
@@ -424,12 +495,19 @@ const ManageCar = () => {
     }
   };
 
+  const handleResetFilter = () => {
+    setCategoryFilter("all");
+    setPage(1);
+  };
+
+  const handlePrevPage = () => setPage((p) => Math.max(1, p - 1));
+  const handleNextPage = () => setPage((p) => Math.min(pages, p + 1));
 
   return (
     <div className="min-h-screen bg-gray-950 p-4 sm:p-6">
       <div className="relative mb-8 pt-16 text-center">
         <div className="absolute inset-x-0 top-0 flex justify-center">
-          <div className="h-1 w-20 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full"></div>
+          <div className="h-1 w-20 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full" />
         </div>
 
         <h1 className="text-4xl font-extrabold py-4 text-white sm:text-5xl mb-3 tracking-wide">
@@ -439,33 +517,88 @@ const ManageCar = () => {
         </h1>
       </div>
 
-      <div className=" bg-gray-900/50 backdrop-blur-sm rounded-2xl p-5 mb-6 border border-gray-800">
-        <div className=" flex flex-col md:flex-row items-center justify-between gap-6">
-          <StatCard title="Total Cars" value={cars.length} icon={FaCar} />
-
+      <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl p-5 mb-6 border border-gray-800">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <StatCard title="Total Cars" value={total} icon={FaCar} />
 
           <FilterSelect
             value={categoryFilter}
-            onChange={setCategoryFilter}
+            onChange={(value) => {
+              setCategoryFilter(value);
+              setPage(1);
+            }}
             categories={categories}
           />
         </div>
       </div>
 
-      <div className=" grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCars.map((car) => (
-          <CarCard
-            key={car.id}
-            car={car}
-            onEdit={openEdit}
-            onDelete={handleDelete}
-          />
-        ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {loading && (
+          <div className="col-span-full text-center text-gray-300">
+            Loading cars...
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="col-span-full text-center text-red-400">
+            {error}
+          </div>
+        )}
+
+        {!loading &&
+          !error &&
+          filteredCars.map((car) => (
+            <CarCard
+              key={car.id}
+              car={car}
+              onEdit={openEdit}
+              onDelete={handleDelete}
+            />
+          ))}
       </div>
 
-      {filteredCars.length === 0 && (
-        <NoCarsView onResetFilter={() => setCategoryFilter('all')} />
+      {!loading && !error && filteredCars.length === 0 && (
+        <NoCarsView onResetFilter={handleResetFilter} />
       )}
+
+      {/* Pagination giống bên Cars.jsx */}
+      <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="text-sm text-gray-300">
+          Total:{" "}
+          <span className="font-semibold">
+            {total?.toLocaleString?.() || total} cars
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handlePrevPage}
+            disabled={page <= 1 || loading}
+            className={`px-3 py-1.5 rounded-lg text-sm ${
+              page <= 1 || loading
+                ? "bg-white/5 text-gray-500 cursor-not-allowed"
+                : "bg-white/10 text-gray-100 hover:bg-white/20"
+            } transition`}
+          >
+            Prev
+          </button>
+          <span className="text-sm text-gray-200">
+            Page <span className="font-semibold">{page}</span> of{" "}
+            <span className="font-semibold">{pages}</span>
+          </span>
+          <button
+            onClick={handleNextPage}
+            disabled={page >= pages || loading}
+            className={`px-3 py-1.5 rounded-lg text-sm ${
+              page >= pages || loading
+                ? "bg-white/5 text-gray-500 cursor-not-allowed"
+                : "bg-white/10 text-gray-100 hover:bg-white/20"
+            } transition`}
+          >
+            Next
+          </button>
+        </div>
+      </div>
 
       {showEditModal && editingCar && (
         <EditModal
