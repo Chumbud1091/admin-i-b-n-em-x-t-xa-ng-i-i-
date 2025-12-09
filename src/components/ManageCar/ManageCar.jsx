@@ -434,28 +434,15 @@ const ManageCar = () => {
 
         <h1 className="text-4xl font-extrabold py-4 text-white sm:text-5xl mb-3 tracking-wide">
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-400">
-            Fleet Management
+            Car Management
           </span>
         </h1>
-
-        <p className="text-gray-400 max-w-2xl mx-auto">
-          Manage your entire fleet, track bookings, and monitor vehicle status
-          in real time
-        </p>
       </div>
 
       <div className=" bg-gray-900/50 backdrop-blur-sm rounded-2xl p-5 mb-6 border border-gray-800">
         <div className=" flex flex-col md:flex-row items-center justify-between gap-6">
           <StatCard title="Total Cars" value={cars.length} icon={FaCar} />
 
-          {filteredCars.map((car) => (
-            <CarCard
-              key={car.id}
-              car={car}
-              onEdit={openEdit}
-              onDelete={handleDelete}
-            />
-          ))}
 
           <FilterSelect
             value={categoryFilter}
