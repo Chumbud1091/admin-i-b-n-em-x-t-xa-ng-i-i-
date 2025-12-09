@@ -27,8 +27,8 @@ const buildSafeCar = (raw = {}, idx = 0) => {
   const images = Array.isArray(raw.images)
     ? raw.images
     : raw.image
-    ? [raw.image]
-    : [];
+      ? [raw.image]
+      : [];
 
   return {
     _id,
@@ -160,8 +160,8 @@ const EditModal = ({ car, onClose, onSubmit, onChange }) => {
       Array.isArray(c.images) && c.images.length
         ? c.images
         : c.image
-        ? [c.image]
-        : [],
+          ? [c.image]
+          : [],
   });
 
   const handleSubmit = (e) => {
@@ -380,7 +380,7 @@ const ManageCar = () => {
 
     try {
       abortRef.current?.abort();
-    } catch {}
+    } catch { }
 
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -401,8 +401,9 @@ const ManageCar = () => {
         total: apiTotal,
         cars: apiCars,
       } = res.data || {};
-
-      console.log("Fetched admin cars:", res.data);
+      console.log("Fetched admin cars raw:", res);
+      console.log("Fetched admin cars payload:", res.data);
+      console.log("Fetched admin cars list:", apiCars);
       const safeCars = (apiCars || []).map((c, i) => buildSafeCar(c, i));
 
       setCars(safeCars);
@@ -426,7 +427,7 @@ const ManageCar = () => {
     return () => {
       try {
         abortRef.current?.abort();
-      } catch {}
+      } catch { }
     };
   }, [fetchCars]);
 
@@ -472,8 +473,8 @@ const ManageCar = () => {
       images: Array.isArray(car.images)
         ? car.images
         : car.image
-        ? [car.image]
-        : [],
+          ? [car.image]
+          : [],
       image: car.image || (Array.isArray(car.images) ? car.images[0] : ""),
       _id: car._id ?? null,
     });
@@ -575,11 +576,10 @@ const ManageCar = () => {
           <button
             onClick={handlePrevPage}
             disabled={page <= 1 || loading}
-            className={`px-3 py-1.5 rounded-lg text-sm ${
-              page <= 1 || loading
+            className={`px-3 py-1.5 rounded-lg text-sm ${page <= 1 || loading
                 ? "bg-white/5 text-gray-500 cursor-not-allowed"
                 : "bg-white/10 text-gray-100 hover:bg-white/20"
-            } transition`}
+              } transition`}
           >
             Prev
           </button>
@@ -590,11 +590,10 @@ const ManageCar = () => {
           <button
             onClick={handleNextPage}
             disabled={page >= pages || loading}
-            className={`px-3 py-1.5 rounded-lg text-sm ${
-              page >= pages || loading
+            className={`px-3 py-1.5 rounded-lg text-sm ${page >= pages || loading
                 ? "bg-white/5 text-gray-500 cursor-not-allowed"
                 : "bg-white/10 text-gray-100 hover:bg-white/20"
-            } transition`}
+              } transition`}
           >
             Next
           </button>
