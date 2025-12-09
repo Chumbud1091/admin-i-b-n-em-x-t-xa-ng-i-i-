@@ -4,48 +4,29 @@ import { styles } from '../../assets/dummyStyles';
 import { toast } from 'react-toastify';
 import client from '../../../services/client';
 
-const makeImageUrl = (img) => {
-  if (!img) return "";
-  const s = String(img).trim();
-  return /^https?:\/\//i.test(s)
-    ? s
-    : `${import.meta.env.VITE_API_BASE_URL}/uploads/${s.replace(/^\/+/, "").replace(/^uploads\//, "")}`;
-};
-
-const sanitizeImageForBackend = (img) => {
-  if (!img) return "";
-  let s = String(img).trim();
-  if (/^https?:\/\//i.test(s)) {
-    const idx = s.lastIndexOf("/uploads/");
-    s =
-      idx !== -1
-        ? s.slice(idx + "/uploads/".length)
-        : s.slice(s.lastIndexOf("/") + 1);
-  }
-  return s.replace(/^\/+/, "").replace(/^uploads\//, "");
-};
-
 const buildSafeCar = (raw = {}, idx = 0) => {
   const _id = raw._id || raw.id || null;
+  const images = Array.isArray(raw.images)
+    ? raw.images
+    : (raw.image ? [raw.image] : []);
+
   return {
     _id,
     id: _id || raw.id || raw.localId || `local-${idx + 1}`,
     make: raw.make || "",
     model: raw.model || "",
     year: raw.year ?? "",
+    price: raw.price ?? 0,
+    color: raw.color || "",
     category: raw.category || "Sedan",
     seats: raw.seats ?? 4,
     transmission: raw.transmission || "Automatic",
-    fuelType: raw.fuelType || raw.fuel || "Gasoline",
-    mileage: raw.mileage ?? 0,
-    dailyRate: raw.dailyRate ?? raw.price ?? 0,
-    status: raw.status || "available",
-    _rawImage: raw.image ?? raw._rawImage ?? "",
-    image: raw.image
-      ? makeImageUrl(raw.image)
-      : raw._rawImage
-        ? makeImageUrl(raw._rawImage)
-        : "",
+    fuelType: raw.fuelType || "Gasoline",
+    engine: raw.engine || "",
+    horsepower: raw.horsepower ?? "",
+    description: raw.description || "",
+    images,
+    image: images[0] || "",
   };
 };
 
@@ -87,15 +68,10 @@ const CarCard = ({ car, onEdit, onDelete }) => {
     >
       <div className="relative">
         <img
-          src={car.image}
+          src={car.images?.[0]}
           alt={`${car.make} ${car.model}`}
           className={styles.carImage}
         />
-        <div className='absolute top-4 right-4'>
-          <span className={`${styles.statusBadge} ${getStatusStyle(car.status)}`}>
-            {car.status.charAt(0).toUpperCase() + car.status.slice(1)}
-          </span>
-        </div>
       </div>
 
       <div className="p-5">
@@ -108,13 +84,11 @@ const CarCard = ({ car, onEdit, onDelete }) => {
           </div>
 
           <div className="text-2xl font-bold text-orange-500">
-            ${car.dailyRate}
-            <span className="text-sm text-gray-400 font-normal">/day</span>
+            ${car.price?.toLocaleString()}
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-5">
-
           <div className="flex items-center text-sm">
             <FaGasPump className={`${styles.textOrange} mr-2`} />
             <span className={styles.textGray300}>{car.fuelType}</span>
@@ -123,18 +97,18 @@ const CarCard = ({ car, onEdit, onDelete }) => {
           <div className="flex items-center text-sm">
             <FaTachometerAlt className={`${styles.textOrange} mr-2`} />
             <span className={styles.textGray300}>
-              {(car.mileage || 0).toLocaleString()} mi
+              {car.horsepower ? `${car.horsepower} HP` : "—"}
             </span>
           </div>
 
           <div className="flex items-center text-sm">
             <FaUser className={`${styles.textOrange} mr-2`} />
-            <span className={styles.textGray300}>{car.fuelType}</span>
+            <span className={styles.textGray300}>{car.seats} seats</span>
           </div>
 
           <div className="flex items-center text-sm">
             <FaCog className={`${styles.textOrange} mr-2`} />
-            <span className={styles.textGray300}>{car.fuelType}</span>
+            <span className={styles.textGray300}>{car.transmission}</span>
           </div>
         </div>
 
@@ -159,18 +133,24 @@ const CarCard = ({ car, onEdit, onDelete }) => {
 
 const EditModal = ({ car, onClose, onSubmit, onChange }) => {
   const mapToBackend = (c) => ({
+    _id: c._id,
     make: c.make,
     model: c.model,
-    year: Number(c.year || 0),
-    category: c.category || "Sedan",
-    seats: Number(c.seats || 0),
-    transmission: c.transmission || "Automatic",
+    year: Number(c.year),
+    price: Number(c.price),
+    color: c.color,
+    category: c.category,
+    seats: Number(c.seats),
+    transmission: c.transmission,
     fuelType: c.fuelType,
-    mileage: Number(c.mileage || 0),
-    dailyRate: Number(c.dailyRate || 0),
-    status: c.status || "available",
-    image: sanitizeImageForBackend(c.image || c._rawImage || ""),
+    engine: c.engine,
+    horsepower: Number(c.horsepower),
+    description: c.description,
+    images: Array.isArray(c.images) && c.images.length
+      ? c.images
+      : (c.image ? [c.image] : []),
   });
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -182,9 +162,9 @@ const EditModal = ({ car, onClose, onSubmit, onChange }) => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    onchange({
+    onChange({
       ...car,
-      [name]: ["year", "dailyRate", "mileage", "seats"].includes(name)
+      [name]: ["year", "price", "seats", "horsepower"].includes(name)
         ? value === ""
           ? ""
           : Number(value)
@@ -260,19 +240,6 @@ const EditModal = ({ car, onClose, onSubmit, onChange }) => {
                   "Luxury",
                 ],
               })}
-              {inputField("Status", "status", "select", {
-                required: true,
-                items: ["available", "rented", "maintenance"],
-              })}
-              {inputField("Daily Rate ($)", "dailyRate", "number", {
-                required: true,
-                min: 1,
-                step: 0.01,
-              })}
-              {inputField("Mileage", "mileage", "number", {
-                required: true,
-                min: 0,
-              })}
               {inputField("Transmission", "transmission", "select", {
                 required: true,
                 items: ["Automatic", "Manual", "CVT"],
@@ -288,14 +255,10 @@ const EditModal = ({ car, onClose, onSubmit, onChange }) => {
               min: 1,
               max: 12,
             })}
-            {inputField("Image (filename or URL)", "image", "text", {
-              required: true,
-            })}
-
-            {car.image && (
+            {car.images?.[0] && (
               <div className="flex justify-center">
                 <img
-                  src={makeImageUrl(car.image)}
+                  src={car.images[0]}
                   alt="preview"
                   className="h-40 object-contain rounded-md border border-orange-800/30"
                 />
@@ -375,22 +338,17 @@ const FilterSelect = ({ value, onChange, categories }) => (
 
 const ManageCar = () => {
 
-  const [car, setCars] = React.useState([]);
+  const [cars, setCars] = React.useState([]);
   const [categoryFilter, setCategoryFilter] = React.useState("all");
   const [editingCar, setEditingCar] = React.useState(null);
   const [showEditModal, setShowEditModal] = React.useState(false);
 
+
   const fetchCars = useCallback(async () => {
     try {
-      const response = await client.get('/api/cars?limit=100');
+      const response = await client.get('/admin/cars?limit=100');
       const raw = Array.isArray(response.data) ? response.data : response.data.data || [];
-      setCars(
-        raw.map((c, i) => ({
-          ...buildSafeCar(c, i),
-          image: c.image ? makeImageUrl(c.image) : buildSafeCar(c, i).image,
-          _rawImage: c.image ?? c._rawImage ?? "",
-        }))
-      );
+      setCars(raw.map((c, i) => buildSafeCar(c, i)));
     }
     catch (error) {
       console.error("Error fetching cars:", error);
@@ -402,31 +360,34 @@ const ManageCar = () => {
     fetchCars();
   }, [fetchCars]);
 
-  const category = useMemo(() => [
-    'all',
-    ...Array.from(new Set(car.map((c) => c.category || "Sendan"))),
-  ], [car]);
+  const categories = useMemo(
+    () => [
+      "all",
+      ...Array.from(new Set(cars.map((c) => c.category || "Sedan"))),
+    ],
+    [cars]
+  );
 
   const filteredCars = useMemo(
     () =>
-      car.filter(
-        (car) => categoryFilter === "all" || car.category === categoryFilter
+      cars.filter(
+        (c) => categoryFilter === "all" || c.category === categoryFilter
       ),
-    [car, categoryFilter]
+    [cars, categoryFilter]
   );
 
   const handleDelete = async (identifier) => {
-    const car = car.find((c) => c._id === identifier || c.id === identifier);
-    if (!car) return toast.error("Car not found");
+    const target = cars.find((c) => c._id === identifier || c.id === identifier);
+    if (!target) return toast.error("Car not found");
     if (!window.confirm("Are you sure you want to delete this car?")) return;
 
     try {
-      if (!car._id) {
-        setCars((prev) => prev.filter((p) => p.id !== car.id));
+      if (!target._id) {
+        setCars((prev) => prev.filter((p) => p.id !== target.id));
         toast.success("Car removed locally.");
         return;
       }
-      await client.delete(`/api/cars/${car._id}`);
+      await client.delete(`/admin/cars/${target._id}`);
       toast.success("Car deleted");
       fetchCars();
     } catch (err) {
@@ -435,32 +396,34 @@ const ManageCar = () => {
     }
   };
 
+
   const openEdit = (car) => {
     setEditingCar({
       ...car,
-      image: car._rawImage ?? car.image ?? "",
+      images: Array.isArray(car.images) ? car.images : (car.image ? [car.image] : []),
+      image: car.image || (Array.isArray(car.images) ? car.images[0] : ""),
       _id: car._id ?? null,
     });
     setShowEditModal(true);
   };
 
+
   const handleEditSubmit = async (payload) => {
     try {
-      if (editingCar._id) {
-        await client.put(`/api/cars/${editingCar._id}`, payload);
-        toast.success("Car updated");
-      } else {
-        await client.post('/api/cars', payload);
-        toast.success("Car added successfully");
-      }
+      const { _id, ...data } = payload;
+
+      await client.put(`/admin/cars/${_id}`, data);
+
+      toast.success("Car updated");
+      fetchCars();
       setShowEditModal(false);
       setEditingCar(null);
-      fetchCars();
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || "Failed to save car");
+      toast.error(err.response?.data?.message || "Failed to update car");
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gray-950 p-4 sm:p-6">
@@ -483,12 +446,21 @@ const ManageCar = () => {
 
       <div className=" bg-gray-900/50 backdrop-blur-sm rounded-2xl p-5 mb-6 border border-gray-800">
         <div className=" flex flex-col md:flex-row items-center justify-between gap-6">
-          <StatCard title="Total Cars" value={car.length} icon={FaCar} />
+          <StatCard title="Total Cars" value={cars.length} icon={FaCar} />
+
+          {filteredCars.map((car) => (
+            <CarCard
+              key={car.id}
+              car={car}
+              onEdit={openEdit}
+              onDelete={handleDelete}
+            />
+          ))}
 
           <FilterSelect
             value={categoryFilter}
             onChange={setCategoryFilter}
-            categories={category}
+            categories={categories}
           />
         </div>
       </div>

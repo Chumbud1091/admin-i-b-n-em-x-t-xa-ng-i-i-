@@ -25,7 +25,6 @@ const AddCar = () => {
   const fileRef = useRef(null);
 
   const resetForm = useCallback(() => {
-    // (Optional) clear preview URL cũ
     data.imagePreviews?.forEach((url) => {
       try {
         URL.revokeObjectURL(url);
@@ -46,7 +45,6 @@ const AddCar = () => {
     }));
   }, []);
 
-  // ✅ Upload nhiều ảnh
   const handleImagesChange = useCallback(
     (e) => {
       const files = Array.from(e.target.files || []);
@@ -59,7 +57,6 @@ const AddCar = () => {
         return;
       }
 
-      // clear preview cũ
       data.imagePreviews?.forEach((url) => {
         try {
           URL.revokeObjectURL(url);
@@ -111,7 +108,6 @@ const AddCar = () => {
     try {
       const formData = new FormData();
 
-      // 🧬 Map đúng schema
       const fieldMappings = {
         make: data.make,
         model: data.model,
@@ -131,15 +127,10 @@ const AddCar = () => {
         formData.append(key, value);
       });
 
-      // 🖼️ Gửi nhiều ảnh lên BE
       if (data.images && data.images.length > 0) {
-        // đúng với schema images: [String]
         data.images.forEach((file) => {
           formData.append("images", file);
         });
-
-        // Nếu BE cũ còn xài field "image" đơn lẻ thì vẫn tương thích:
-        formData.append("image", data.images[0]);
       }
 
       await client.post("/api/cars", formData, {
@@ -284,7 +275,7 @@ const AddCar = () => {
         name: "category",
         label: "Category",
         required: true,
-        options: ["SUV", "Sports", "Coupe", "Hatchback", "Luxury"],
+        options: ["Sedan", "SUV", "Sports", "Coupe", "Hatchback", "Luxury"],
       },
     },
   ];
