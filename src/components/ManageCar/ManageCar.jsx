@@ -107,7 +107,7 @@ const CarCard = ({ car, onEdit, onDelete }) => {
           <div className="flex items-center text-sm">
             <FaTachometerAlt className={`${styles.textOrange} mr-2`} />
             <span className={styles.textGray300}>
-              {car.horsepower ? `${car.horsepower} HP` : "—"}
+              {car.engine ? `${car.engine}` : "—"}
             </span>
           </div>
 
